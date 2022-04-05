@@ -206,13 +206,6 @@
 
 \begin{frame}
 	\frametitle{IA-32: {\tt EFLAGS} register}
-	\begin{figure}
-    	\includegraphics[height=2.8in]{images/intel-manual-eflags.png}
-  	\end{figure}
-\end{frame}
-
-\begin{frame}
-	\frametitle{IA-32: {\tt EFLAGS} register}
   	\begin{itemize}
   		\item 32-bits register, boolean flags
   		\item \textbf{Program status}: overflow, sign, zero, auxiliary carry (BCD), parity, carry
@@ -227,6 +220,13 @@
   		\item \textbf{System}: control operating-system operations
   \end{itemize}
  \end{frame}
+
+ \begin{frame}
+	\frametitle{IA-32: {\tt EFLAGS} register}
+	\begin{figure}
+    	\includegraphics[height=2.8in]{images/intel-manual-eflags.png}
+  	\end{figure}
+\end{frame}
 
  \begin{frame}{Fundamental data types}
 
@@ -451,26 +451,6 @@ Computes op1 $-$ op2 & Computes op1 $\&$ op2 \\
 \end{frame}
 
 \begin{frame}
-  \frametitle{Control-Flow Instructions: unconditional jump {\tt jmp}}
-  \begin{columns}
-    \begin{column}{0.4\columnwidth}
-      \begin{figure}
-        \includegraphics[width=1.1\textwidth]{images/x86-jmp.pdf}
-
-        \label{Control Flow JMP}
-      \end{figure}
-    \end{column}
-    \begin{column}{0.6\columnwidth}
-      \begin{itemize}
-	      \item{{\tt jmp} \underline{\textbf{address}} or \underline{\textbf{offset}}}\\
-	      \item Unconditional jump: just set the {\tt EIP} to \textbf{address}
-	      \item Can be also \emph{relative}: increment or decrement {\tt EIP} by an offset
-      \end{itemize}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}
   \frametitle{Control-Flow Instructions: conditional jumps}
   
   {\tt j<cc>} \underline{\textbf{address}} or \underline{\textbf{offset}}
@@ -497,6 +477,26 @@ Computes op1 $-$ op2 & Computes op1 $\&$ op2 \\
 	\item {\tt jlt} = jump if less than
 	\end{itemize}
       Reference: \url{http://www.unixwiz.net/techtips/x86-jumps.html}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Control-Flow Instructions: unconditional jump {\tt jmp}}
+  \begin{columns}
+    \begin{column}{0.4\columnwidth}
+      \begin{figure}
+        \includegraphics[width=1.1\textwidth]{images/x86-jmp.pdf}
+
+        \label{Control Flow JMP}
+      \end{figure}
+    \end{column}
+    \begin{column}{0.6\columnwidth}
+      \begin{itemize}
+	      \item{{\tt jmp} \underline{\textbf{address}} or \underline{\textbf{offset}}}\\
+	      \item Unconditional jump: just set the {\tt EIP} to \textbf{address}
+	      \item Can be also \emph{relative}: increment or decrement {\tt EIP} by an offset
+      \end{itemize}
     \end{column}
   \end{columns}
 \end{frame}
@@ -964,7 +964,7 @@ Instruction {\tt leave}: restores the caller's base pointer
   \end{itemize}
   \item Arguments: passed \textbf{through the stack}, right to left order
   \item Cleanup: the \textbf{caller removes} the parameters from the stack \emph{after} the called function completes
-  \item Return: register {\tt RAX}
+  \item Return: register {\tt EAX}
   \item Caller-saved registers: {\tt EAX}, {\tt ECX}, {\tt EDX} (other are callee-saved)
   \end{itemize}
 \end{frame}
