@@ -96,7 +96,7 @@
   \insertframenumber\,/\,\inserttotalframenumber}
 \title{x86 Crash Course}
 \subtitle{With a focus on Linux and a glance to x86\_64}
-\author[NECSTLab]{Mario Polino, Armando Bellante, Lorenzo Binosi}
+\author[NECSTLab]{Mario Polino, Lorenzo Binosi, Alessandro Bertani}
 \institute{DEIB, Politecnico di Milano}
 \date{\today}
 
@@ -228,7 +228,7 @@
   	\end{figure}
 \end{frame}
 
- \begin{frame}{Fundamental data types}
+ \begin{frame}{x86 Fundamental data types}
 
  \begin{description}
 	\item[byte] 8 bits
@@ -345,6 +345,23 @@ Beware: in x86, instructions have \textbf{variable length}.
       \end{tabular}
   \end{block}
   
+\end{frame}
+
+\begin{frame}{Load effective address ({\tt lea})}
+  \begin{itemize}
+  		\item{{\tt lea} \underline{\textbf{destination}}, \underline{\textbf{source}}}\\
+  		\textbf{source}: memory location\\
+    	\textbf{destination}: register\\
+  		\item{Like a {\tt mov}, but it is storing the pointer, not the value}
+  		\item \alert{It does NOT access memory}
+  \end{itemize}
+
+  \begin{block}{Example}
+  \par\noindent{}
+  \centerline{\includegraphics[width=0.7\textwidth]{images/x86-lea}}
+  \centerline{\tt lea eax, [ebx + 8] $\rightarrow$ \texttt{EAX = 0x00403A48}}
+  \centerline{\textbf{N.B.}: with {\tt mov eax, [ebx+8]} $\rightarrow$ {\tt EAX = 0x0012C140}}
+   \end{block}
 \end{frame}
 
 \begin{frame}{Integer Arithmetics: {\tt add} and {\tt sub}}
@@ -521,23 +538,6 @@ ret:
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}{Load effective address ({\tt lea})}
-  \begin{itemize}
-  		\item{{\tt lea} \underline{\textbf{destination}}, \underline{\textbf{source}}}\\
-  		\textbf{source}: memory location\\
-    	\textbf{destination}: register\\
-  		\item{Like a {\tt mov}, but it is storing the pointer, not the value}
-  		\item \alert{It does NOT access memory}
-  \end{itemize}
-
-  \begin{block}{Example}
-  \par\noindent{}
-  \centerline{\includegraphics[width=0.7\textwidth]{images/x86-lea}}
-  \centerline{\tt lea eax, [ebx + 8] $\rightarrow$ \texttt{EAX = 0x00403A48}}
-  \centerline{\textbf{N.B.}: with {\tt mov eax, [ebx+8]} $\rightarrow$ {\tt EAX = 0x0012C140}}
-   \end{block}
-\end{frame}
-
 \begin{frame}{Basic Instructions: {\tt nop}}
   \begin{itemize}
   \item{{\tt nop} = \textbf{No Operation}. Just move to next instruction.}
@@ -652,31 +652,6 @@ ret:
             .got&This section holds the global offset table.\\
             \bottomrule
 
-          \end{tabular}
-      }
-    \end{table}
-  \end{changemargin}
-\end{frame}
-
-\begin{frame}
-  \begin{changemargin}{-1cm}{-1cm}
-    \frametitle{How an executable is mapped to memory in Windows (PE)}
-    \begin{table}[l]
-        \scalebox{0.9}{
-          \begin{tabular}{ll}
-            \toprule
-            \textbf{Executable}&\textbf{Description}\\\midrule
-            .text&Contains the executable code\\\midrule
-            .rdata&Holds read-only data that is globally accessible within	\\
-            &the program\\\midrule
-
-            .data&Stores global data accessed throughout the program\\\midrule
-            .idata&stores the import function information;\\\midrule
-            .edata&stores the export function information;\\\midrule
-            .pdata&Present only in 64-bit executables and stores\\
-            & execption-handling information\\\midrule
-            .rsrc&Stores resources needed by the executable\\\midrule
-            .reloc&Contains information for relocation of library files\\\bottomrule
           \end{tabular}
       }
     \end{table}
@@ -882,6 +857,10 @@ ret:
 \end{columns}
 \end{frame}
 
+\begin{frame}[fragile]{CHE COSE\' EBP}
+  aasdasd
+\end{frame}
+
 \begin{frame}[fragile]{Entering a function}
 \begin{block}{Example: We've just called {\tt func}, located at 0x800bff00}
 \vskip 0.4em
@@ -991,111 +970,6 @@ add esp, 16  ; clean up the stack
 \end{frame}
 
 \begin{frame}[fragile]
-  \frametitle{Calling Conventions: {\tt stdcall}}
-  \begin{itemize}
-  \item Microsoft's Win32 API standard calling convention (modifier: \alert{\tt \_stdcall}
-  \item Parameters: passed using the stack (as in \_cdecl)
-  \item Main difference: the callee is responsible for clearing the function parameters from the stack before returning
-  \begin{itemize}
-  \item To do this, the function needs to know the right number of parameter passed $\rightarrow$ can be used only with functions having a fixed number of parameters (e.g., no \texttt{printf}).
-  \end{itemize}
-  \end{itemize}
-
-\begin{lstlisting}[language=C]
-void _stdcall demo_stdcall(int a, int b, int c);
-demo_stdcall(1, 2, 3);
-\end{lstlisting}
-\begin{lstlisting}[language={[x86masm]Assembler}]
-ret 12  ; return and clear 12 bytes from the stack
-\end{lstlisting}
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{{\tt stdcall}: Example}
-  \begin{columns}
-    \begin{column}{.5\textwidth}
-\begin{lstlisting}[language=C]
-void function (int a, int b) {
-  int array [5];
-}
-
-int main (int argc, char** argv) {
-  function(1, 2);
-  printf("This is where the ret address points");
-}
-\end{lstlisting}
-    \end{column}
-    \begin{column}{.5\textwidth}
-    	\centering
-    	\par{\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
-	\begin{drawstack}[scale=0.7, font=\footnotesize]
-	\startframe
-	\cell{array[0]}
-	\padding{1}{...}
-	\cell{array[4]}
-	\cell{Saved EBP}
-	\cell{Return address}
-	\cell{1}
-	\cell{2}
-	\end{drawstack}
-	\par{\scriptsize High addresses ({\tt 0xbfffffff})}
-     \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{Assembler-level View of the Same Example}
-  \begin{columns}
-    \begin{column}{.5\textwidth}
-
-\begin{lstlisting}[language={[x86masm]Assembler},basicstyle=\tiny\ttfamily]
-public main
-main proc near
-push ebp
-mov ebp, esp ; create stack
-and esp,0FFFFFFFF0h
-sub esp,10h ; make room for vars
-mov dword ptr[esp+4],2 ; push 2
-mov dword ptr[esp],1 ; push 1
-call function
-mov dword ptr [esp], offset format; "This is..."
-call _printf
-leave
-ret
-main endp
-
-public function
-function proc near
-push ebp
-mov ebp,esp ; create stack
-sub esp,14h ; make room for array
-leave
-retn 8 ; remove 2 dwords
-function endp
-\end{lstlisting}
-    \end{column}
-
-    \begin{column}{.5\textwidth}
-    	\centering
-    	\par{\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
-	\begin{drawstack}[scale=0.7, font=\footnotesize]
-	\startframe
-	\cell{array[0]}
-	\padding{1}{...}
-	\cell{array[4]}
-	\cell{Saved EBP}
-	\cell{Return address}
-	\cell{1}
-	\cell{2}
-	\end{drawstack}
-	\par{\scriptsize High addresses ({\tt 0xbfffffff})}
-     \end{column}
-  \end{columns}
-  \begin{figure}
-  \end{figure}
-\end{frame}
-
-\begin{frame}[fragile]
   \frametitle{Calling Conventions: {\tt fastcall}}
   \begin{itemize}
   \item Modifier: \alert{\_fastcall}
@@ -1120,67 +994,6 @@ call demo_fastcall
 \item Caller-saved registers (scratch): {\tt rax}, {\tt rdi}, {\tt rsi}, {\tt rdx}, {\tt rcx}, {\tt r8}, {\tt r9}, {\tt r10}, {\tt r11}
 \item Return value: {\tt rax} (if 128-bit: {\tt rax} and {\tt rdx})
 \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{Linux x86-64 calling convention: Example}
-  \begin{columns}
-    \begin{column}{.5\textwidth}
-\begin{lstlisting}[language={[x86masm]Assembler},basicstyle=\tiny\ttfamily]
-main:
-  push    rbp
-  mov     rbp, rsp
-  sub     rsp, 16
-  mov     DWORD PTR [rbp-4], edi
-  mov     QWORD PTR [rbp-16], rsi
-  mov     esi, 2    ; Second parameter
-  mov     edi, 1    ; First parameter
-  call    function
-  mov     esi, eax  ; Return value -> first param
-  mov     edi, OFFSET FLAT:.LC0 ; "The return ...
-  mov     eax, 0
-  call    printf
-  leave
-  ret
-
-function:
-  push    rbp
-  mov     rbp, rsp
-  mov     DWORD PTR [rbp-4], edi
-  mov     DWORD PTR [rbp-8], esi
-  mov     edx, DWORD PTR [rbp-4]
-  mov     eax, DWORD PTR [rbp-8]
-  add     eax, edx
-  pop     rbp
-  ret
-\end{lstlisting}
-    \end{column}
-
-    \begin{column}{.5\textwidth}
-
-\begin{lstlisting}[language=C,basicstyle=\tiny\ttfamily]
-int function (int a, int b) {
-    return a + b;
-}
-
-int main (int argc, char** argv) {
-    return printf("The return value is %d\n", function(1,2));
-}
-\end{lstlisting}
-	\vspace{-2em}
-	\begin{center}
-    	\par{\scriptsize Low addresses}\\[.5em]
-	\resizebox{!}{9em}{%
-	\begin{drawstack}[scale=0.7, font=\footnotesize]
-	\cell{2}
-	\cell{1}
-	\cell{Saved RBP}
-	\cell{Return address}
-	\end{drawstack}}
-	\par{\scriptsize High addresses}
-	\end{center}
-    \end{column}
-  \end{columns}
 \end{frame}
 
 \section{Tooling}
