@@ -828,7 +828,7 @@ ret:
 \item {\tt EBP} register: pointer to the beginning (base) of a function's frame
 \item At the beginning of a function:
 	\begin{itemize}
-	\item Save EBP to stack
+	\item Save {\tt EBP} to stack
 	\item Set {\tt EBP} to the address of the function's frame
 	\end{itemize}
 \end{itemize}
@@ -857,8 +857,59 @@ ret:
 \end{columns}
 \end{frame}
 
-\begin{frame}[fragile]{CHE COSE\' EBP}
-  aasdasd
+\begin{frame}[fragile]{Using {\tt EBP} to access local variables}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{itemize}
+        \item {\tt EBP} is the address of the base of the current function's frame
+        \item It is used to easily access local variables
+        \item Local variables are stored in the stack frame, at a lower address than {\tt EBP}: \textit{negative offsets}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+        \stacktop{}
+        \cell{Local variable 3}\cellptr{{\tt EBP - 0xc}} 
+        \cell{Local variable 2}\cellptr{{\tt EBP - 0x8}} 
+        \cell{Local variable 1}\cellptr{{\tt EBP - 0x4}} 
+        \cell{Saved {\tt EBP}}\cellptr{{\tt EBP}}
+        \bcell{Return addr (s{\tt EIP})}
+        \bcell{Arguments}
+        \bcell{Local variables}
+        \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Using {\tt EBP} to access function arguments}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{itemize}
+        \item Depending on the calling convention (more on this later), {\tt EBP} may be used to access function arguments
+        \item Function arguments are stored in the caller's frame, at a higher address than {\tt EBP}: \textit{positive offsets}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+        \stacktop{}
+        \cell{Local variables}\cellptr{{\tt ESP}}
+        \cell{Saved {\tt EBP}}\cellptr{{\tt EBP}}
+        \bcell{Return addr (s{\tt EIP})}
+        \bcell{Argument 1}\cellptr{{\tt EBP + 0x4}}
+        \bcell{Argument 2}\cellptr{{\tt EBP + 0x8}}
+        \bcell{Argument 3}\cellptr{{\tt EBP + 0xc}}
+        \bcell{Local variables}
+        \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}[fragile]{Entering a function}
