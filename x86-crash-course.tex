@@ -14,6 +14,8 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 
+\usetikzlibrary{matrix}
+\usetikzlibrary{positioning}
 \usetikzlibrary{shapes}
 \tikzset{%
   stack/.style={%
@@ -41,6 +43,8 @@
 \definecolor{blue}{HTML}{268BD2}
 \definecolor{cyan}{HTML}{2AA198}
 \definecolor{green}{HTML}{859900}
+\definecolor{lightorange}{RGB}{255,200,150} % Adjust the RGB values as needed
+\definecolor{lightblue}{RGB}{173,216,230}   % Adjust the RGB values as needed
 
 \usepackage{listings}
 \lstset{%
@@ -172,6 +176,52 @@
     \end{figure}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Memory}
+  \begin{tikzpicture}[font=\tiny]
+    % Draw the memory layout
+    \matrix[matrix of nodes,
+            ampersand replacement=\&,
+            row sep=-\pgflinewidth,
+            column sep=-\pgflinewidth,
+            nodes={draw, minimum size=5.5mm, anchor=center, font=\tiny},
+            column 1/.style={nodes={fill=lightorange}},
+            column 2/.style={nodes={fill=lightorange}},
+            column 3/.style={nodes={fill=lightorange}},
+            column 4/.style={nodes={fill=lightorange}},
+            column 5/.style={nodes={fill=lightblue}},
+            column 6/.style={nodes={fill=lightblue}},
+            column 7/.style={nodes={fill=lightblue}},
+            column 8/.style={nodes={fill=lightblue}},
+            column 9/.style={nodes={fill=lightorange}},
+            column 10/.style={nodes={fill=lightorange}},
+            column 11/.style={nodes={fill=lightorange}},
+            column 12/.style={nodes={fill=lightorange}},
+            column 13/.style={nodes={fill=lightblue}},
+            column 14/.style={nodes={fill=lightblue}},
+            column 15/.style={nodes={fill=lightblue}},
+            column 16/.style={nodes={fill=lightblue}},
+            ] (mem) at (0,0)
+    {
+        00 \& 01 \& 02 \& 03 \& 04 \& 05 \& 06 \& 07 \& 08 \& 09 \& 0A \& 0B \& 0C \& 0D \& 0E \& 0F \\
+        E8 \& FF \& FF \& FF \& E0 \& FF \& FF \& FF \& D8 \& FF \& FF \& FF \& D0 \& FF \& FF \& FF \\
+        50 \& 20 \& 40 \& 80 \& 60 \& 20 \& 40 \& 80 \& 70 \& 20 \& 40 \& 80 \& 80 \& 20 \& 40 \& 80 \\
+        48 \& 65 \& 6C \& 6C \& 6F \& 20 \& 77 \& 6F \& 72 \& 6C \& 64 \& 00 \& 00 \& 00 \& 00 \& 00 \\
+        'H' \& 'e' \& 'l' \& 'l' \& 'o' \& ' ' \& 'w' \& 'o' \& 'r' \& 'l' \& 'd' \& 00 \& 00 \& 00 \& 00 \& 00 \\
+    };
+    % Add column labels above
+    \foreach \col in {1,...,16}{
+      \pgfmathparse{hex(\col-1)}
+      \edef\hexValue{\pgfmathresult} 
+      \expandafter\MakeUppercase\expandafter{\hexValue} 
+      \node[above=3mm of mem-1-\col] {\MakeUppercase{\hexValue}}; 
+    }
+    % Add addresses to the left
+    \foreach \row in {1,...,5}{
+        \node[left=3mm of mem-\row-1] {0x804020\pgfmathparse{int(5-\row)}\pgfmathresult...};
+    }
+  \end{tikzpicture}
+\end{frame}
 
 \begin{frame}
 	\frametitle{IA-32: Registers}
@@ -501,23 +551,77 @@ Computes op1 $-$ op2 & Computes op1 $\&$ op2 \\
   \end{columns}
 \end{frame}
 
+\begin{frame}[fragile]{Exercise 1}
+  Translate the following C code in assembly x86. Assume EBX $\leftarrow$ \texttt{b}, ECX $\leftarrow$ \texttt{c}. Finally, \texttt{a} goes in EAX.
+  \begin{lstlisting}[language={C}]
+if (c == 0)
+    a = b;
+else
+    a = -b;
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Solution}
+  \begin{lstlisting}[language={[x86masm]Assembler}]
+    mov     edx, 0
+    cmp     ecx, edx
+    jne     ELSE
+    mov     eax, ebx
+    jmp     ENDIF
+ELSE:
+    mov     eax, 0
+    sub     eax, ebx
+ENDIF:
+    nop
+    ...
+
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Exercise 2}
+  Translate the following C code in assembly x86. The variable \texttt{a} goes in EAX.
+  \begin{lstlisting}[language={C}]
+a = 0;
+for(i = 0; i < 10; i++)
+    a += i;
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Solution}
+  \begin{lstlisting}[language={[x86masm]Assembler}]
+    mov     eax, 0
+    mov     ebx, 0
+    mov     ecx, 10
+LOOP:
+    cmp     ebx, ecx
+    jge     END
+    add     eax, ebx
+    inc     ebx
+    jmp     LOOP
+END:
+    nop
+    ...
+
+\end{lstlisting}
+\end{frame}
+
 \begin{frame}[fragile]{A very simple example (what does it do?)}
 Assume that the input is in registers: {\tt ECX} and {\tt EDX}; output: {\tt EAX}
 \begin{lstlisting}[language={[x86masm]Assembler}]
-        mov     eax, ecx
-        mov     ebx, edx
-        cmp     ebx, 0
-        jz      label
-loop:
-        cmp     ebx, 1
-        jle     ret
-        mul     ecx
-        sub     ebx, 1
-        jmp     loop
-label:
-        mov     eax, 1
-ret:
-        ...
+    mov     eax, ecx
+    mov     ebx, edx
+    cmp     ebx, 0
+    jz      LABEL
+LOOP:
+    cmp     ebx, 1
+    jle     RET
+    mul     ecx
+    sub     ebx, 1
+    jmp     LOOP
+LABEL:
+    mov     eax, 1
+RET:
+    ...
 \end{lstlisting}
 \end{frame}
 
@@ -658,30 +762,30 @@ ret:
   \end{changemargin}
 \end{frame}
 
-\begin{frame}
-  \begin{changemargin}{-1cm}{-1cm}
-    \frametitle{How an executable is mapped to memory in Windows (PE)}
-    \begin{table}[l]
-        \scalebox{0.9}{
-          \begin{tabular}{ll}
-            \toprule
-            \textbf{Executable}&\textbf{Description}\\\midrule
-            .text&Contains the executable code\\\midrule
-            .rdata&Holds read-only data that is globally accessible within	\\
-            &the program\\\midrule
+% \begin{frame}
+%   \begin{changemargin}{-1cm}{-1cm}
+%     \frametitle{How an executable is mapped to memory in Windows (PE)}
+%     \begin{table}[l]
+%         \scalebox{0.9}{
+%           \begin{tabular}{ll}
+%             \toprule
+%             \textbf{Executable}&\textbf{Description}\\\midrule
+%             .text&Contains the executable code\\\midrule
+%             .rdata&Holds read-only data that is globally accessible within	\\
+%             &the program\\\midrule
 
-            .data&Stores global data accessed throughout the program\\\midrule
-            .idata&stores the import function information;\\\midrule
-            .edata&stores the export function information;\\\midrule
-            .pdata&Present only in 64-bit executables and stores\\
-            & execption-handling information\\\midrule
-            .rsrc&Stores resources needed by the executable\\\midrule
-            .reloc&Contains information for relocation of library files\\\bottomrule
-          \end{tabular}
-      }
-    \end{table}
-  \end{changemargin}
-\end{frame}
+%             .data&Stores global data accessed throughout the program\\\midrule
+%             .idata&stores the import function information;\\\midrule
+%             .edata&stores the export function information;\\\midrule
+%             .pdata&Present only in 64-bit executables and stores\\
+%             & execption-handling information\\\midrule
+%             .rsrc&Stores resources needed by the executable\\\midrule
+%             .reloc&Contains information for relocation of library files\\\bottomrule
+%           \end{tabular}
+%       }
+%     \end{table}
+%   \end{changemargin}
+% \end{frame}
 
 \begin{frame}[fragile]{Simplified program memory layout}    
  \begin{center}
