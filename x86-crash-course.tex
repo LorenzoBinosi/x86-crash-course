@@ -122,15 +122,15 @@
 
 %\section{Crash course on x86 Assembly}
 
-\begin{frame}
-	\frametitle{How to Read the Matrix!}
-  \hspace*{-11mm}
-  \includegraphics[width=\paperwidth]{./images/pwndbg.png}
-\end{frame}
-\begin{frame}
-  \frametitle{Outline}
-  \tableofcontents
-\end{frame}
+% \begin{frame}
+% 	\frametitle{How to Read the Matrix!}
+%   \hspace*{-11mm}
+%   \includegraphics[width=\paperwidth]{./images/pwndbg.png}
+% \end{frame}
+% \begin{frame}
+%   \frametitle{Outline}
+%   \tableofcontents
+% \end{frame}
 
 \section{The x86 Architecture}
 \subsection{Overview on the common 32-bit Intel Architecture (IA)}
@@ -700,34 +700,9 @@ RET:
   \end{block}
 \end{frame}
 
-%\begin{frame}
- % \frametitle{Endianness cont.}
-%  The \textbf{endianness} is a convention that specifies in which order the bytes of a data word are lined up sequentially in memory.
-%  \begin{columns}
-%    \begin{column}{0.5\columnwidth}
-%      \includegraphics[width=\textwidth]{images/Endianessmap1.pdf}
-%      \label{Big-Endian}
- %   \end{column}
- %   \begin{column}{0.5\columnwidth}
- %     \includegraphics[width=0.6\textwidth]{images/Endianessmap2.pdf}
-%      \label{Little-Endian}
-%    \end{column}
-%  \end{columns}
-%\end{frame}
-
 \section{Program Layout and Functions}
 
 \subsection{Memory Layout}
-
-\begin{frame}
-  \frametitle{Binary File Formats}
-  \begin{itemize}
-  \item{\textbf{PE (Portable Executable):} used by Microsoft binary executables}
-  \item{\textbf{ELF:} common binary format for Unix, Linux, FreeBSD and others}
-  \item In both cases, we are interested in how each executable is
-    mapped into memory, rather than how it is organized on disk.
-  \end{itemize}
-\end{frame}
 
 \begin{frame}
   \begin{changemargin}{-1cm}{-1cm}
@@ -761,31 +736,6 @@ RET:
     \end{table}
   \end{changemargin}
 \end{frame}
-
-% \begin{frame}
-%   \begin{changemargin}{-1cm}{-1cm}
-%     \frametitle{How an executable is mapped to memory in Windows (PE)}
-%     \begin{table}[l]
-%         \scalebox{0.9}{
-%           \begin{tabular}{ll}
-%             \toprule
-%             \textbf{Executable}&\textbf{Description}\\\midrule
-%             .text&Contains the executable code\\\midrule
-%             .rdata&Holds read-only data that is globally accessible within	\\
-%             &the program\\\midrule
-
-%             .data&Stores global data accessed throughout the program\\\midrule
-%             .idata&stores the import function information;\\\midrule
-%             .edata&stores the export function information;\\\midrule
-%             .pdata&Present only in 64-bit executables and stores\\
-%             & execption-handling information\\\midrule
-%             .rsrc&Stores resources needed by the executable\\\midrule
-%             .reloc&Contains information for relocation of library files\\\bottomrule
-%           \end{tabular}
-%       }
-%     \end{table}
-%   \end{changemargin}
-% \end{frame}
 
 \begin{frame}[fragile]{Simplified program memory layout}    
  \begin{center}
@@ -950,6 +900,684 @@ RET:
 }
 
 \begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+  \begin{column}{0.45\linewidth}
+    At the beginning of a function, the function itself must reserve space for its local variables.
+    \begin{lstlisting}[language={C}]
+void foo() {
+  int a;
+  int b;
+  int c;
+
+  b = 0;
+}
+    \end{lstlisting}    
+  \end{column}
+  \begin{column}{0.4\linewidth}
+    \par
+    {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+    \begin{tikzpicture}[scale=.7, font=\footnotesize]
+    \stacktop{}
+    \startframe
+    \cell{}
+    \cell{}
+    \cell{}
+    \cell{}
+    \cell{}
+    \cell{}
+    \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt ESP}} 
+    \stackbottom
+    \end{tikzpicture}
+    {\scriptsize High addresses ({\tt 0xbfffffff})}
+  \end{column}
+  \end{columns}
+  \end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      At the beginning of a function, the function itself must reserve space for its local variables.
+      \begin{lstlisting}[language={[x86masm]Assembler}]
+FOO:
+    mov ebp, esp
+    sub esp, 0xc
+    mov [ebp - 0x8], 0x0
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt ESP}} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      At the beginning of a function, the function itself must reserve space for its local variables.
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp %$\leftarrow$%
+    sub esp, 0xc
+    mov [ebp - 0x8], 0x0
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt ESP, EBP}} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      At the beginning of a function, the function itself must reserve space for its local variables.
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc %$\leftarrow$%
+    mov [ebp - 0x8], 0x0
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \cell{}
+      \bcell{(a)}\cellptr{{\tt ESP}} 
+      \bcell{(b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt EBP}} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      At the beginning of a function, the function itself must reserve space for its local variables.
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    mov [ebp - 0x8], 0x0 %$\leftarrow$%
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \cell{}
+      \bcell{(a)}\cellptr{{\tt ESP}} 
+      \bcell{0 (b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt EBP}} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      At the beginning of a function, the function itself must reserve space for its local variables.
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc %$\leftarrow$%
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{0}
+      \cell{}
+      \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt ESP, EBP}} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      At the beginning of a function, the function itself must reserve space for its local variables.
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret %$\leftarrow$%
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{0}
+      \cell{}
+      \cell{Return addr (s{\tt EIP})}\cellptr{{\tt EBP}} 
+      \stackbottom\cellptr{{\tt ESP}} 
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+    That works!!! But what if \texttt{foo} calls \texttt{bar}.
+    \begin{lstlisting}[language={C}]
+void foo() {
+  int a;
+  int b;
+  int c;
+
+  bar();
+  b = 0;
+}
+
+void bar() {
+  int d;
+
+  d = 1;
+}
+    \end{lstlisting}    
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc
+    call BAR
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp
+    sub esp, 0x4
+    mov [ebp - 0x4], 0x1
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt ESP}} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp %$\leftarrow$%
+    sub esp, 0xc
+    call BAR
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp
+    sub esp, 0x4
+    mov [ebp - 0x4], 0x1
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \cell{}
+      \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt ESP, EBP}} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc %$\leftarrow$%
+    call BAR
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp
+    sub esp, 0x4
+    mov [ebp - 0x4], 0x1
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \cell{}
+      \bcell{(a)}\cellptr{{\tt ESP}} 
+      \bcell{(b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt EBP}} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    call BAR %$\leftarrow$%
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp
+    sub esp, 0x4
+    mov [ebp - 0x4], 0x1
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \bcell{foo ret addr (s{\tt EIP})}\cellptr{{\tt ESP}}
+      \bcell{(a)}
+      \bcell{(b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})}\cellptr{{\tt EBP}} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    call BAR 
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp %$\leftarrow$%
+    sub esp, 0x4
+    mov [ebp - 0x4], 0x1
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{}
+      \bcell{foo ret addr (s{\tt EIP})}\cellptr{{\tt ESP, EBP}}
+      \bcell{(a)}
+      \bcell{(b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    call BAR 
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp 
+    sub esp, 0x4 %$\leftarrow$%
+    mov [ebp - 0x4], 0x1
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \bcell{(d)}\cellptr{{\tt ESP}}
+      \bcell{foo ret addr (s{\tt EIP})}\cellptr{{\tt EBP}}
+      \bcell{(a)}
+      \bcell{(b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    call BAR 
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp 
+    sub esp, 0x4 
+    mov [ebp - 0x4], 0x1 %$\leftarrow$%
+    add esp, 0xc
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \bcell{1 (d)}\cellptr{{\tt ESP}}
+      \bcell{foo ret addr (s{\tt EIP})}\cellptr{{\tt EBP}}
+      \bcell{(a)}
+      \bcell{(b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    call BAR 
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp 
+    sub esp, 0x4 
+    mov [ebp - 0x4], 0x1 
+    add esp, 0xc %$\leftarrow$%
+    ret
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{1}
+      \bcell{foo ret addr (s{\tt EIP})}\cellptr{{\tt ESP, EBP}}
+      \bcell{(a)}
+      \bcell{(b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    call BAR 
+    mov [ebp - 0x8], 0x0 
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp 
+    sub esp, 0x4 
+    mov [ebp - 0x4], 0x1 
+    add esp, 0xc 
+    ret %$\leftarrow$%
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{}
+      \cell{1}
+      \cell{foo ret addr (s{\tt EIP})}\cellptr{{\tt EBP}}
+      \bcell{(a)}\cellptr{{\tt ESP}}
+      \bcell{(b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+  \begin{columns}
+    \begin{column}{0.45\linewidth}
+      \vskip 0.4em
+      Wrong memory access!!! EBP changed and we lost the old value!
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    mov ebp, esp 
+    sub esp, 0xc 
+    call BAR 
+    mov [ebp - 0x8], 0x0 %$\leftarrow$%
+    add esp, 0xc 
+    ret
+
+BAR:
+    mov ebp, esp 
+    sub esp, 0x4 
+    mov [ebp - 0x4], 0x1 
+    add esp, 0xc 
+    ret 
+      \end{lstlisting}
+    \end{column}
+    \begin{column}{0.4\linewidth}
+      \par
+      {\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+      \begin{tikzpicture}[scale=.7, font=\footnotesize]
+      \stacktop{}
+      \startframe
+      \cell{0}
+      \cell{1}
+      \cell{foo ret addr (s{\tt EIP})}\cellptr{{\tt EBP}}
+      \bcell{(a)}\cellptr{{\tt ESP}}
+      \bcell{(b)}
+      \bcell{(c)}
+      \bcell{Return addr (s{\tt EIP})} 
+      \stackbottom
+      \end{tikzpicture}
+      {\scriptsize High addresses ({\tt 0xbfffffff})}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
+
+      \vskip 0.4em
+      Redacted!
+      \begin{lstlisting}[language={[x86masm]Assembler}, escapechar=\%]
+FOO:
+    push ebp
+    mov ebp, esp 
+    sub esp, 0xc 
+    call BAR 
+    mov [ebp - 0x8], 0x0 
+    leave 
+    ret
+
+BAR:
+    push ebp
+    mov ebp, esp 
+    sub esp, 0x4 
+    mov [ebp - 0x4], 0x1 
+    leave
+    ret 
+      \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Functions and Stack Frames}
 \begin{columns}
 \begin{column}{0.45\linewidth}
 \begin{itemize}
@@ -968,8 +1596,8 @@ RET:
 	\begin{tikzpicture}[scale=.7, font=\footnotesize]
 	\stacktop{}
 	\startframe
-	\cell{Local variables}\cellptr{{\tt ESP}} 
-	\cell{Saved {\tt EBP}}\cellptr{{\tt EBP}} \coordinate (p1) at (currentcell.east);
+	\bcell{Local variables}\cellptr{{\tt ESP}} 
+	\bcell{Saved {\tt EBP}}\cellptr{{\tt EBP}} \coordinate (p1) at (currentcell.east);
 	\finishframe{\rotatebox{90}{callee's frame}}
 	\startframe
 	\bcell{Return addr (s{\tt EIP})}
@@ -1072,6 +1700,7 @@ Instruction {\tt leave}: restores the caller's base pointer
   \item Caller-saved registers: {\tt EAX}, {\tt ECX}, {\tt EDX} (other are callee-saved)
   \end{itemize}
 \end{frame}
+
 \begin{frame}[fragile]
   \frametitle{{\tt cdecl}: Example}
 \begin{lstlisting}[language=C]
@@ -1094,136 +1723,87 @@ add esp, 16  ; clean up the stack
 
 \end{frame}
 
-\begin{frame}[fragile]
-  \frametitle{Calling Conventions: {\tt stdcall}}
+% \begin{frame}[fragile]
+%   \frametitle{Assembler-level View of the Same Example}
+%   \begin{columns}
+%     \begin{column}{.5\textwidth}
+
+% \begin{lstlisting}[language={[x86masm]Assembler},basicstyle=\tiny\ttfamily]
+% public main
+% main proc near
+% push ebp
+% mov ebp, esp ; create stack
+% and esp,0FFFFFFFF0h
+% sub esp,10h ; make room for vars
+% mov dword ptr[esp+4],2 ; push 2
+% mov dword ptr[esp],1 ; push 1
+% call function
+% mov dword ptr [esp], offset format; "This is..."
+% call _printf
+% leave
+% ret
+% main endp
+
+% public function
+% function proc near
+% push ebp
+% mov ebp,esp ; create stack
+% sub esp,14h ; make room for array
+% leave
+% retn 8 ; remove 2 dwords
+% function endp
+% \end{lstlisting}
+%     \end{column}
+
+%     \begin{column}{.5\textwidth}
+%     	\centering
+%     	\par{\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
+% 	\begin{drawstack}[scale=0.7, font=\footnotesize]
+% 	\startframe
+% 	\cell{array[0]}
+% 	\padding{1}{...}
+% 	\cell{array[4]}
+% 	\cell{Saved EBP}
+% 	\cell{Return address}
+% 	\cell{1}
+% 	\cell{2}
+% 	\end{drawstack}
+% 	\par{\scriptsize High addresses ({\tt 0xbfffffff})}
+%      \end{column}
+%   \end{columns}
+%   \begin{figure}
+%   \end{figure}
+% \end{frame}
+
+% \begin{frame}[fragile]
+%   \frametitle{Calling Conventions: {\tt fastcall}}
+%   \begin{itemize}
+%   \item Modifier: \alert{\_fastcall}
+%   \item Up to 2 parameters passed via registers: {\tt ECX} and {\tt EDX}
+%   \item Other parameters pushed to the stack (right to left order, stack cleanup by callee as in {\tt stdcall})
+%   \end{itemize}
+% \begin{lstlisting}[language={[x86masm]Assembler}]
+% ; demo_fastcall(1, 2, 3, 4);
+% push 4 ; push 4th parameter
+% push 3 ; push 3rd parameter
+% mov edx, 2 ; move 2nd parameter in EDX
+% mov ecx, 1 ; move 1st parameter in ECX
+% call demo_fastcall
+% ; do not clean up the stack (done by callee)
+% \end{lstlisting}
+% \end{frame}
+
+\begin{frame}{Calling Conventions: {\tt fastcall} (C declaration)}
   \begin{itemize}
-  \item Microsoft's Win32 API standard calling convention (modifier: \alert{\tt \_stdcall}
-  \item Parameters: passed using the stack (as in \_cdecl)
-  \item Main difference: the callee is responsible for clearing the function parameters from the stack before returning
+  \item Default calling convention used by most x86\_64 C compilers
   \begin{itemize}
-  \item To do this, the function needs to know the right number of parameter passed $\rightarrow$ can be used only with functions having a fixed number of parameters (e.g., no \texttt{printf}).
+  	\item Can be forced with the modifier \alert{\tt \_fastcall}
   \end{itemize}
+  \item Parameters passed {\bf in registers}: {\tt rdi}, {\tt rsi}, {\tt rdx}, {\tt rcx}, {\tt r8}, {\tt r9}, subsequent ones on the stack (reverse order, caller cleanup)
+  \item Callee-saved registers: {\tt rbx}, {\tt rsp}, {\tt rbp}, {\tt r12}, {\tt r13}, {\tt r14}, and {\tt r15}
+  \item Caller-saved registers (scratch): {\tt rax}, {\tt rdi}, {\tt rsi}, {\tt rdx}, {\tt rcx}, {\tt r8}, {\tt r9}, {\tt r10}, {\tt r11}
+  \item Return value: {\tt rax} (if 128-bit: {\tt rax} and {\tt rdx})
   \end{itemize}
-
-\begin{lstlisting}[language=C]
-void _stdcall demo_stdcall(int a, int b, int c);
-demo_stdcall(1, 2, 3);
-\end{lstlisting}
-\begin{lstlisting}[language={[x86masm]Assembler}]
-ret 12  ; return and clear 12 bytes from the stack
-\end{lstlisting}
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{{\tt stdcall}: Example}
-  \begin{columns}
-    \begin{column}{.5\textwidth}
-\begin{lstlisting}[language=C]
-void function (int a, int b) {
-  int array [5];
-}
-
-int main (int argc, char** argv) {
-  function(1, 2);
-  printf("This is where the ret address points");
-}
-\end{lstlisting}
-    \end{column}
-    \begin{column}{.5\textwidth}
-    	\centering
-    	\par{\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
-	\begin{drawstack}[scale=0.7, font=\footnotesize]
-	\startframe
-	\cell{array[0]}
-	\padding{1}{...}
-	\cell{array[4]}
-	\cell{Saved EBP}
-	\cell{Return address}
-	\cell{1}
-	\cell{2}
-	\end{drawstack}
-	\par{\scriptsize High addresses ({\tt 0xbfffffff})}
-     \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{Assembler-level View of the Same Example}
-  \begin{columns}
-    \begin{column}{.5\textwidth}
-
-\begin{lstlisting}[language={[x86masm]Assembler},basicstyle=\tiny\ttfamily]
-public main
-main proc near
-push ebp
-mov ebp, esp ; create stack
-and esp,0FFFFFFFF0h
-sub esp,10h ; make room for vars
-mov dword ptr[esp+4],2 ; push 2
-mov dword ptr[esp],1 ; push 1
-call function
-mov dword ptr [esp], offset format; "This is..."
-call _printf
-leave
-ret
-main endp
-
-public function
-function proc near
-push ebp
-mov ebp,esp ; create stack
-sub esp,14h ; make room for array
-leave
-retn 8 ; remove 2 dwords
-function endp
-\end{lstlisting}
-    \end{column}
-
-    \begin{column}{.5\textwidth}
-    	\centering
-    	\par{\scriptsize Low addresses ({\tt 0x80000000})}\\[.5em]
-	\begin{drawstack}[scale=0.7, font=\footnotesize]
-	\startframe
-	\cell{array[0]}
-	\padding{1}{...}
-	\cell{array[4]}
-	\cell{Saved EBP}
-	\cell{Return address}
-	\cell{1}
-	\cell{2}
-	\end{drawstack}
-	\par{\scriptsize High addresses ({\tt 0xbfffffff})}
-     \end{column}
-  \end{columns}
-  \begin{figure}
-  \end{figure}
-\end{frame}
-
-\begin{frame}[fragile]
-  \frametitle{Calling Conventions: {\tt fastcall}}
-  \begin{itemize}
-  \item Modifier: \alert{\_fastcall}
-  \item Up to 2 parameters passed via registers: {\tt ECX} and {\tt EDX}
-  \item Other parameters pushed to the stack (right to left order, stack cleanup by callee as in {\tt stdcall})
-  \end{itemize}
-\begin{lstlisting}[language={[x86masm]Assembler}]
-; demo_fastcall(1, 2, 3, 4);
-push 4 ; push 4th parameter
-push 3 ; push 3rd parameter
-mov edx, 2 ; move 2nd parameter in EDX
-mov ecx, 1 ; move 1st parameter in ECX
-call demo_fastcall
-; do not clean up the stack (done by callee)
-\end{lstlisting}
-\end{frame}
-
-\begin{frame}{Calling Conventions: Linux x86-64 (System V ABI)}
-\begin{itemize}
-\item Parameters passed {\bf in registers}: {\tt rdi}, {\tt rsi}, {\tt rdx}, {\tt rcx}, {\tt r8}, {\tt r9}, subsequent ones on the stack (reverse order, caller cleanup)
-\item Callee-saved registers: {\tt rbx}, {\tt rsp}, {\tt rbp}, {\tt r12}, {\tt r13}, {\tt r14}, and {\tt r15}
-\item Caller-saved registers (scratch): {\tt rax}, {\tt rdi}, {\tt rsi}, {\tt rdx}, {\tt rcx}, {\tt r8}, {\tt r9}, {\tt r10}, {\tt r11}
-\item Return value: {\tt rax} (if 128-bit: {\tt rax} and {\tt rdx})
-\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
